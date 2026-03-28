@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import {
+  Alert,
+  ActivityIndicator,
   Pressable,
   SafeAreaView,
   ScrollView,
@@ -9,6 +11,8 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import { login } from '../features/auth/api';
+import { setAuthUser } from '../services/authSession';
 
 const PRIMARY = '#6B998B';
 
@@ -17,6 +21,72 @@ export function LoginPage({ navigation }) {
   const [password, setPassword] = useState('');
   const [secureTextEntry, setSecureTextEntry] = useState(true);
   const [rememberMe, setRememberMe] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [loginStatus, setLoginStatus] = useState('');
+
+  function showStatusMessage(title, message) {
+    setLoginStatus(message);
+    if (Platform.OS !== 'web') {
+      Alert.alert(title, message);
+    }
+  }
+
+  async function handleLogin() {
+    if (isSubmitting) {
+      return;
+    }
+
+    const normalizedIdentity = identity.trim();
+    const normalizedPassword = password.trim();
+
+    if (!normalizedIdentity) {
+      showStatusMessage('Uyarı', 'Lütfen e-posta veya öğrenci numarası girin.');
+      return;
+    }
+
+    if (!normalizedPassword) {
+      showStatusMessage('Uyarı', 'Lütfen şifre girin.');
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      setLoginStatus('Giriş isteği gönderiliyor...');
+
+      const payload = normalizedIdentity.includes('@')
+        ? { email: normalizedIdentity, password: normalizedPassword }
+        : { schoolNo: normalizedIdentity, password: normalizedPassword };
+
+      console.log('[AUTH] Login request started', {
+        identityType: normalizedIdentity.includes('@') ? 'email' : 'schoolNo',
+        rememberMe,
+      });
+
+      const response = await login(payload);
+
+      console.log('[AUTH] Login response', {
+        status: response?.status,
+        hasData: Boolean(response?.data),
+      });
+
+      setAuthUser(response?.data || null);
+
+      setLoginStatus('Giriş başarılı. Ana sayfaya yönlendiriliyor...');
+      navigation.replace('Main');
+    } catch (error) {
+      const status = error?.response?.status;
+      const message =
+        error?.response?.data?.message ||
+        (error?.message?.toLowerCase().includes('network')
+          ? 'Sunucuya ulaşılamadı. Cihaz/Emülatör ağ adresini kontrol edin.'
+          : 'Giriş başarısız. Lütfen bilgilerinizi kontrol edin.');
+
+      console.log('[AUTH] Login failed', { status, message });
+      showStatusMessage('Giriş Hatası', `Hata: ${message}`);
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -78,9 +148,15 @@ export function LoginPage({ navigation }) {
             </Pressable>
           </View>
 
-          <Pressable style={styles.primaryButton} onPress={() => navigation.replace('Main')}>
-            <Text style={styles.primaryButtonText}>Giriş Yap</Text>
+          <Pressable style={[styles.primaryButton, isSubmitting && styles.primaryButtonDisabled]} onPress={handleLogin} disabled={isSubmitting}>
+            {isSubmitting ? (
+              <ActivityIndicator color="#ffffff" />
+            ) : (
+              <Text style={styles.primaryButtonText}>Giriş Yap</Text>
+            )}
           </Pressable>
+
+          {loginStatus ? <Text style={styles.statusText}>{loginStatus}</Text> : null}
 
           <Pressable onPress={() => navigation.navigate('Register')}>
             <Text style={styles.bottomLink}>Hesabın yok mu? Kayıt ol</Text>
@@ -206,10 +282,19 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: 12,
   },
+  primaryButtonDisabled: {
+    opacity: 0.7,
+  },
   primaryButtonText: {
     color: '#ffffff',
     fontWeight: '700',
     fontSize: 15,
+  },
+  statusText: {
+    textAlign: 'center',
+    color: '#334155',
+    marginBottom: 10,
+    fontSize: 13,
   },
   bottomLink: {
     textAlign: 'center',

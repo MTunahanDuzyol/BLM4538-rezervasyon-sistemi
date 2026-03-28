@@ -8,10 +8,10 @@ export function HomePage({ navigation }) {
       <View style={styles.topBar}>
         <Text style={styles.topTitle}>Ana Sayfa</Text>
         <View style={styles.topActions}>
-          <Pressable style={styles.iconButton} onPress={() => navigation.navigate('ProfileStats')}>
+          <Pressable style={styles.iconButton} onPress={() => navigation.getParent()?.navigate('MyPage')}>
             <Text style={styles.iconText}>Profil</Text>
           </Pressable>
-          <Pressable style={styles.iconButton} onPress={() => navigation.navigate('Resources')}>
+          <Pressable style={styles.iconButton} onPress={() => navigation.getParent()?.navigate('Menu')}>
             <Text style={styles.iconText}>Menu</Text>
           </Pressable>
         </View>
@@ -26,7 +26,7 @@ export function HomePage({ navigation }) {
           />
           <Pressable
             style={styles.addButton}
-            onPress={() => navigation.getParent()?.navigate('ReservationCreate')}
+            onPress={() => navigation.getParent()?.navigate('ReservationForm')}
           >
             <Text style={styles.addButtonText}>+</Text>
           </Pressable>
@@ -41,12 +41,12 @@ export function HomePage({ navigation }) {
         <View style={styles.gridRow}>
           <Pressable
             style={styles.featureCard}
-            onPress={() => navigation.getParent()?.navigate('ReservationCreate')}
+            onPress={() => navigation.getParent()?.navigate('ReservationForm')}
           >
             <Text style={styles.featureText}>Koltuk{`\n`}rezervasyonu</Text>
           </Pressable>
 
-          <Pressable style={styles.featureCard} onPress={() => navigation.navigate('Resources')}>
+          <Pressable style={styles.featureCard} onPress={() => navigation.getParent()?.navigate('LibraryStatus')}>
             <Text style={styles.featureText}>Detaylı{`\n`}bilgi</Text>
           </Pressable>
         </View>

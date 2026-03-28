@@ -1,5 +1,8 @@
 import { useState } from 'react';
 import {
+  ActivityIndicator,
+  Alert,
+  Platform,
   Pressable,
   SafeAreaView,
   ScrollView,
@@ -9,17 +12,116 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import { register } from '../features/auth/api';
 
 const PRIMARY = '#6B998B';
 
 export function RegisterPage({ navigation }) {
-  const [fullName, setFullName] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [identity, setIdentity] = useState('');
   const [password, setPassword] = useState('');
   const [password2, setPassword2] = useState('');
   const [secureTextEntry1, setSecureTextEntry1] = useState(true);
   const [secureTextEntry2, setSecureTextEntry2] = useState(true);
   const [acceptTerms, setAcceptTerms] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [registerStatus, setRegisterStatus] = useState('');
+
+  function showStatusMessage(title, message) {
+    setRegisterStatus(message);
+    if (Platform.OS !== 'web') {
+      Alert.alert(title, message);
+    }
+  }
+
+  async function handleRegister() {
+    if (isSubmitting) {
+      return;
+    }
+
+    console.log('[AUTH] Register button pressed');
+    setRegisterStatus('Kayıt kontrol ediliyor...');
+
+    const normalizedFirstName = firstName.trim();
+    const normalizedLastName = lastName.trim();
+    const normalizedIdentity = identity.trim();
+    const normalizedPassword = password.trim();
+    const normalizedPassword2 = password2.trim();
+
+    if (normalizedFirstName.length < 2) {
+      showStatusMessage('Uyarı', 'Ad en az 2 karakter olmalıdır.');
+      return;
+    }
+
+    if (normalizedLastName.length < 2) {
+      showStatusMessage('Uyarı', 'Soyad en az 2 karakter olmalıdır.');
+      return;
+    }
+
+    if (!normalizedIdentity) {
+      showStatusMessage('Uyarı', 'Öğrenci no veya e-posta zorunludur.');
+      return;
+    }
+
+    if (normalizedPassword.length < 6) {
+      showStatusMessage('Uyarı', 'Şifre en az 6 karakter olmalıdır.');
+      return;
+    }
+
+    if (normalizedPassword !== normalizedPassword2) {
+      showStatusMessage('Uyarı', 'Şifreler eşleşmiyor.');
+      return;
+    }
+
+    if (!acceptTerms) {
+      showStatusMessage('Uyarı', 'Lütfen kullanım koşullarını kabul edin.');
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      setRegisterStatus('Kayıt isteği gönderiliyor...');
+
+      const isEmail = normalizedIdentity.includes('@');
+
+      const payload = {
+        firstName: normalizedFirstName,
+        lastName: normalizedLastName,
+        email: isEmail ? normalizedIdentity : '',
+        password: normalizedPassword,
+        userType: 'student',
+        okulNo: isEmail ? '' : normalizedIdentity,
+      };
+
+      const response = await register(payload);
+
+      console.log('[AUTH] Register response', {
+        status: response?.status,
+        hasData: Boolean(response?.data),
+      });
+
+      setRegisterStatus('Kayıt başarılı. Giriş ekranına yönlendiriliyorsunuz...');
+      if (Platform.OS !== 'web') {
+        Alert.alert('Başarılı', 'Kayıt tamamlandı. Giriş yapabilirsiniz.');
+      }
+      navigation.navigate('Login');
+    } catch (error) {
+      const message =
+        error?.response?.data?.message ||
+        error?.response?.data?.error ||
+        'Kayıt başarısız. Bilgileri kontrol edip tekrar deneyin.';
+
+      console.log('[AUTH] Register failed', {
+        status: error?.response?.status,
+        message,
+      });
+
+      showStatusMessage('Kayıt Hatası', `Hata: ${message}`);
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -47,9 +149,16 @@ export function RegisterPage({ navigation }) {
         <View style={styles.formCard}>
           <TextInput
             style={styles.input}
-            placeholder="Ad Soyad"
-            value={fullName}
-            onChangeText={setFullName}
+            placeholder="Ad"
+            value={firstName}
+            onChangeText={setFirstName}
+          />
+
+          <TextInput
+            style={styles.input}
+            placeholder="Soyad"
+            value={lastName}
+            onChangeText={setLastName}
           />
 
           <TextInput
@@ -96,9 +205,19 @@ export function RegisterPage({ navigation }) {
             <Text style={styles.termsText}>Kullanım koşullarını ve KVKK metnini kabul ediyorum.</Text>
           </View>
 
-          <Pressable style={styles.primaryButton} onPress={() => navigation.goBack()}>
-            <Text style={styles.primaryButtonText}>Kayıt Ol</Text>
+          <Pressable
+            style={[styles.primaryButton, isSubmitting && styles.primaryButtonDisabled]}
+            onPress={handleRegister}
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? (
+              <ActivityIndicator color="#ffffff" />
+            ) : (
+              <Text style={styles.primaryButtonText}>Kayıt Ol</Text>
+            )}
           </Pressable>
+
+          {registerStatus ? <Text style={styles.statusText}>{registerStatus}</Text> : null}
 
           <Pressable onPress={() => navigation.navigate('Login')}>
             <Text style={styles.bottomLink}>Zaten hesabın var mı? Giriş yap</Text>
@@ -217,10 +336,19 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: 12,
   },
+  primaryButtonDisabled: {
+    opacity: 0.7,
+  },
   primaryButtonText: {
     color: '#ffffff',
     fontWeight: '700',
     fontSize: 15,
+  },
+  statusText: {
+    textAlign: 'center',
+    color: '#334155',
+    marginBottom: 10,
+    fontSize: 13,
   },
   bottomLink: {
     textAlign: 'center',
