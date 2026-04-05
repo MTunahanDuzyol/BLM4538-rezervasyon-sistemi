@@ -8,6 +8,10 @@ export async function createReservation(payload) {
   return apiClient.post('/api/rezervasyon', payload);
 }
 
+export async function createReservationWithConfig(payload, config) {
+  return apiClient.post('/api/rezervasyon', payload, config);
+}
+
 export async function cancelReservation(id) {
   return apiClient.post(`/api/rezervasyon/${id}/cancel`);
 }
@@ -26,6 +30,10 @@ export async function getReservationSlots(params) {
 
 export async function reserveSlot(payload) {
   return apiClient.post('/api/rezervasyon/slots/reserve', payload);
+}
+
+export async function reserveSlotWithConfig(payload, config) {
+  return apiClient.post('/api/rezervasyon/slots/reserve', payload, config);
 }
 
 export async function reserveDay(payload) {

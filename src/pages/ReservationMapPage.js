@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, SafeAreaView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Platform, Pressable, SafeAreaView, StyleSheet, Text, View } from 'react-native';
 import { getAvailability, getResources } from '../features/resources/api';
-import { reserveSlot } from '../features/reservations/api';
+import { createReservationWithConfig, reserveSlotWithConfig } from '../features/reservations/api';
+import { getAuthUser } from '../services/authSession';
 
 export function ReservationMapPage({ navigation, route }) {
   const [selectedSeat, setSelectedSeat] = useState(null);
@@ -10,6 +11,7 @@ export function ReservationMapPage({ navigation, route }) {
   const [loading, setLoading] = useState(true);
   const [confirming, setConfirming] = useState(false);
   const [loadError, setLoadError] = useState('');
+  const [confirmStatus, setConfirmStatus] = useState('');
   const selectedDate = route?.params?.date;
   const selectedStart = route?.params?.startTime;
   const selectedEnd = route?.params?.endTime;
@@ -85,11 +87,72 @@ export function ReservationMapPage({ navigation, route }) {
     setSelectedSeatInfo(seat);
   }
 
+  function navigateToHome() {
+    try {
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'Main', params: { screen: 'Home' } }],
+      });
+      return;
+    } catch (error) {
+      // no-op: try fallback navigation methods below
+    }
+
+    const parent = navigation.getParent();
+    if (parent && typeof parent.reset === 'function') {
+      try {
+        parent.reset({
+          index: 0,
+          routes: [{ name: 'Main', params: { screen: 'Home' } }],
+        });
+        return;
+      } catch (error) {
+        // no-op: final fallback below
+      }
+    }
+
+    navigation.navigate('Main', { screen: 'Home' });
+  }
+
   async function handleConfirm() {
     if (!selectedSeat || !selectedSeatInfo) return;
 
+    if (!dateParam) {
+      setConfirmStatus('Tarih bilgisi eksik.');
+      Alert.alert('Tarih Hatası', 'Rezervasyon tarihi bulunamadı. Lütfen yeniden seçim yapın.');
+      return;
+    }
+
+    const activeUser = getAuthUser();
+    const requesterEmail = activeUser?.email || activeUser?.Email || '';
+
+    if (!requesterEmail) {
+      setConfirmStatus('Oturum bilgisi eksik. Lutfen yeniden giris yapin.');
+      Alert.alert('Oturum Hatası', 'Kullanıcı bilgisi bulunamadı. Lütfen yeniden giriş yapın.');
+      return;
+    }
+
+    const startParts = parseTimeParts(selectedStart);
+    const endParts = parseTimeParts(selectedEnd);
+
+    const startHour = startParts?.hour ?? null;
+    const endHour = endParts?.hour ?? null;
+
+    if (startHour == null || endHour == null) {
+      setConfirmStatus('Saat bilgisi gecersiz.');
+      Alert.alert('Saat Hatası', 'Başlangıç/Bitiş saati geçersiz görünüyor. Lütfen yeniden seçim yapın.');
+      return;
+    }
+
+    if ((startParts?.minute ?? 0) !== 0 || (endParts?.minute ?? 0) !== 0) {
+      setConfirmStatus('Yalnizca tam saat secilebilir.');
+      Alert.alert('Saat Hatası', 'Backend şu anda yalnızca tam saat (örn. 10:00, 11:00) rezervasyonu destekliyor.');
+      return;
+    }
+
     try {
       setConfirming(true);
+      setConfirmStatus('Rezervasyon istegi gonderiliyor...');
       console.log('[ReservationMap] Confirm pressed', {
         seatId: selectedSeat,
         seatName: selectedSeatInfo.name,
@@ -98,26 +161,69 @@ export function ReservationMapPage({ navigation, route }) {
         endTime: selectedEnd,
       });
 
-      await reserveSlot({
-        kaynakId: selectedSeat,
-        resourceId: selectedSeat,
-        tarih: dateParam,
-        date: dateParam,
-        baslangicZamani: selectedStart,
-        bitisZamani: selectedEnd,
-        startTime: selectedStart,
-        endTime: selectedEnd,
+      const reservePayload = {
+        AlanId: String(selectedSeat),
+        Tarih: dateParam,
+        BaslangicSaati: startHour,
+        BitisSaati: endHour,
+        RequesterEmail: String(requesterEmail).trim(),
+        KullaniciEmail: String(requesterEmail).trim(),
+      };
+
+      await reserveSlotWithConfig(reservePayload, { timeout: 12000 });
+
+      setConfirmStatus('Rezervasyon basarili, ana sayfaya yonlendiriliyorsunuz...');
+
+      if (Platform.OS === 'web') {
+        navigateToHome();
+      } else {
+        Alert.alert('Rezervasyon Başarılı', `${selectedSeatInfo.name} için rezervasyon isteği gönderildi.`);
+        navigateToHome();
+      }
+    } catch (error) {
+      const status = error?.response?.status;
+      const message = error?.response?.data?.error || error?.response?.data?.message || error?.message;
+      console.log('[ReservationMap] Confirm failed', {
+        message,
+        status,
       });
 
-      Alert.alert('Rezervasyon Başarılı', `${selectedSeatInfo.name} için rezervasyon isteği gönderildi.`, [
-        { text: 'Tamam', onPress: () => navigation.getParent()?.navigate('MyReservations') },
-      ]);
-    } catch (error) {
-      console.log('[ReservationMap] Confirm failed', {
-        message: error?.message,
-        status: error?.response?.status,
-      });
-      Alert.alert('Rezervasyon Hatası', 'Rezervasyon oluşturulamadı. Lütfen tekrar deneyin.');
+      const shouldFallback = !status || status >= 500 || String(message || '').toLowerCase().includes('timeout');
+
+      if (shouldFallback) {
+        try {
+          setConfirmStatus('Ana rezervasyon yolunda sorun olustu, alternatif yol deneniyor...');
+
+          await createReservationWithConfig(
+            {
+              AlanId: String(selectedSeat),
+              BaslangicZamani: buildIsoDateTime(dateParam, startHour),
+              BitisZamani: buildIsoDateTime(dateParam, endHour),
+              RequesterEmail: String(requesterEmail).trim(),
+              KullaniciEmail: String(requesterEmail).trim(),
+              KisiSayisi: 1,
+            },
+            { timeout: 12000 }
+          );
+
+          setConfirmStatus('Rezervasyon basarili (alternatif yol), ana sayfaya yonlendiriliyorsunuz...');
+          if (Platform.OS === 'web') {
+            navigateToHome();
+          } else {
+            Alert.alert('Rezervasyon Başarılı', `${selectedSeatInfo.name} için rezervasyon isteği gönderildi.`);
+            navigateToHome();
+          }
+          return;
+        } catch (fallbackError) {
+          console.log('[ReservationMap] Fallback failed', {
+            message: fallbackError?.response?.data?.error || fallbackError?.response?.data?.message || fallbackError?.message,
+            status: fallbackError?.response?.status,
+          });
+        }
+      }
+
+      setConfirmStatus('Rezervasyon olusturulamadi.');
+      Alert.alert('Rezervasyon Hatası', message || 'Rezervasyon oluşturulamadı. Lütfen tekrar deneyin.');
     } finally {
       setConfirming(false);
     }
@@ -165,6 +271,8 @@ export function ReservationMapPage({ navigation, route }) {
         >
           <Text style={styles.confirmText}>{confirming ? 'İşleniyor...' : 'Onayla'}</Text>
         </Pressable>
+
+        {confirmStatus ? <Text style={styles.statusText}>{confirmStatus}</Text> : null}
       </View>
     </SafeAreaView>
   );
@@ -177,6 +285,22 @@ function parseHourMinute(value) {
   const mm = Number(m);
   if (Number.isNaN(hh) || Number.isNaN(mm)) return null;
   return hh * 60 + mm;
+}
+
+function parseTimeParts(value) {
+  if (!value || typeof value !== 'string') return null;
+  const match = String(value).match(/(\d{1,2}):(\d{2})/);
+  if (!match) return null;
+  const hour = Number(match[1]);
+  const minute = Number(match[2]);
+  if (Number.isNaN(hour) || Number.isNaN(minute)) return null;
+  return { hour, minute };
+}
+
+function buildIsoDateTime(dateText, hour) {
+  if (!dateText || hour == null) return null;
+  const hh = String(hour).padStart(2, '0');
+  return `${dateText}T${hh}:00:00`;
 }
 
 function slotStartToMinute(slot) {
@@ -261,4 +385,10 @@ const styles = StyleSheet.create({
   confirmButton: { height: 46, borderRadius: 10, backgroundColor: '#6B998B', alignItems: 'center', justifyContent: 'center' },
   confirmDisabled: { opacity: 0.4 },
   confirmText: { color: '#fff', fontWeight: '700' },
+  statusText: {
+    marginTop: 8,
+    textAlign: 'center',
+    color: '#334155',
+    fontWeight: '500',
+  },
 });

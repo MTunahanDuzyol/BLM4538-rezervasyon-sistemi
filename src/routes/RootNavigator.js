@@ -12,6 +12,7 @@ import { PenaltyPage } from '../pages/PenaltyPage';
 import { StatsPage } from '../pages/StatsPage';
 import { AdminPage } from '../pages/AdminPage';
 import { MenuPage } from '../pages/MenuPage';
+import { AnnouncementsPage } from '../pages/AnnouncementsPage';
 import { MyPage } from '../pages/MyPage';
 import { ProfilePage } from '../pages/ProfilePage';
 import { MobilePassPage } from '../pages/MobilePassPage';
@@ -54,6 +55,7 @@ export function RootNavigator() {
       <Stack.Screen name="CheckOut" component={CheckOutPage} options={{ title: 'Check-out' }} />
       <Stack.Screen name="MobilePass" component={MobilePassPage} options={{ title: 'QR Kimlik' }} />
       <Stack.Screen name="Menu" component={MenuPage} options={{ title: 'Menüler' }} />
+      <Stack.Screen name="Announcements" component={AnnouncementsPage} options={{ title: 'Duyurular' }} />
       <Stack.Screen name="MyPage" component={MyPage} options={{ title: 'Benim Sayfam' }} />
       <Stack.Screen name="Profile" component={ProfilePage} options={{ title: 'Profil' }} />
       <Stack.Screen name="MyReservationsDetail" component={MyReservationsPage} options={{ title: 'Rezervasyon Bilgisi' }} />

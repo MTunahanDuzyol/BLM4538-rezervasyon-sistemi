@@ -1,53 +1,55 @@
 # KURSU Mobile
 
-Bu depo, KURSU rezervasyon sistemi icin Expo React Native mobil istemciyi icerir.
+Bu proje, kutuphane rezervasyon sistemi icin gelistirilen Expo React Native mobil istemcisidir.
+Asagidaki ozet, su ana kadar yapilanlari hafta bazinda sade sekilde anlatir.
 
-## Guncel Durum
+## Hafta 1 - Temel Kurulum ve Iskelet
 
-- Proje kurulumu tamamlandi ve temel bagimliliklar yuklendi.
-- `src` altinda ozellik bazli klasor yapisi olusturuldu.
-- Stack ve tab tabanli navigasyon akisi uygulandi.
-- Login ve Register ekranlari tasarim olarak uygulanip backend entegrasyonu ile calisir hale getirildi.
-- Ana ekran ve diger temel ekranlar Flutter tasarimina yakin sekilde React Native tarafinda uygulandi.
-- Servis (API) katmani ve yardimci (utils) yapisi genisletildi.
+- Proje Expo ile ayaga kaldirildi.
+- Temel bagimliliklar yuklendi.
+- `src` altinda feature tabanli klasor yapisi olusturuldu.
+- Stack ve tab tabanli navigasyon kuruldu.
+- Ana ekranlarin ilk iskeletleri eklendi.
 
-## Hafta 3 Tamamlananlar
+## Hafta 2 - Kimlik Dogrulama ve Rezervasyon Akisi
 
-- Alan/Kaynak listeleme ekrani mock veriden cikarilip API ile calisir hale getirildi.
-- Kaynak detay ekrani eklendi ve kaynaklarin uygunluk detaylari gosterilmeye baslandi.
-- Ana sayfada Son Duyurular bolumu API'den aktif duyurulari gosterecek sekilde guncellendi.
+- Login ve Register ekranlari tasarim + backend entegrasyonu ile calisir hale getirildi.
+- API istemcisi ve endpoint katmani duzenlendi.
+- Rezervasyon formu ve masa secim akisi kuruldu.
+- Masa doluluk kontrolu API verisi ile calisir hale getirildi.
+- Rezervasyon onaylama akisinda hata/uyari durumlari ele alindi.
+
+## Hafta 3 - Kaynaklar ve Duyurular
+
+- Kaynak listeleme mock veriden cikarilip gercek API verisine baglandi.
+- Kaynak detay ekrani eklendi.
+- Ana sayfadaki duyuru alani aktif duyurulari API'den okuyacak sekilde guncellendi.
+- Duyurular icin ayri ekran olusturuldu ve listeleme davranisi eklendi.
+
+## Mevcut Ekranlar (Ozet)
+
+- Login / Register
+- Ana Sayfa
+- Duyurular
+- Kaynak Listesi / Kaynak Detay
+- Rezervasyon Formu / Rezervasyon Haritasi
+- Rezervasyonlarim
+- Menu, Profil, Ayarlar
+- QR islemleri (Check-in / Check-out / Mobile Pass)
+- Istatistik, Ceza-Ihlal, Admin
 
 ## Calistirma
 
-1. Bagimliliklari yukle:
-   npm install
-2. Expo gelistirme sunucusunu baslat:
-   npm run start
+1. Bagimliliklari yukleyin:
+   `npm install`
+2. Gelistirme sunucusunu baslatin:
+   `npm run start`
 3. Istege bagli platform komutlari:
-   npm run android
-   npm run ios
-   npm run web
+   `npm run android`
+   `npm run ios`
+   `npm run web`
 
-## Uygulanan Ekranlar
+## Kisa Not
 
-- Giris (Login)
-- Kayit (Register)
-- Ana Sayfa
-- Menu
-- Benim Sayfam
-- Profil
-- Kaynak/Koltuk listesi ve detay akislari
-- Rezervasyon Formu
-- Rezervasyon Haritasi
-- Rezervasyonlarim
-- QR Giris/Cikis (Check-in, Check-out, Mobile Pass)
-- Ayarlar
-- Ceza ve Ihlal
-- Istatistik
-- Admin
-- Kutuphane Durumu (placeholder bilgi ekrani)
-
-## Not
-
-- Bazi ekranlarda icerik akisi placeholder olarak tutulmustur ve ilerleyen asamalarda gercek verilerle tamamlanacaktir.
+Bazi ekranlarda is kurali ve veri detaylari gelistirme surecinde asamali olarak derinlestirilecektir.
 
