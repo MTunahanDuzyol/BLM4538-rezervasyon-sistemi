@@ -1,11 +1,14 @@
 import { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, SafeAreaView, StyleSheet, Text, View } from 'react-native';
 import { getAvailability, getResources } from '../features/resources/api';
+import { reserveSlot } from '../features/reservations/api';
 
-export function ReservationMapPage({ route }) {
+export function ReservationMapPage({ navigation, route }) {
   const [selectedSeat, setSelectedSeat] = useState(null);
+  const [selectedSeatInfo, setSelectedSeatInfo] = useState(null);
   const [seats, setSeats] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [confirming, setConfirming] = useState(false);
   const [loadError, setLoadError] = useState('');
   const selectedDate = route?.params?.date;
   const selectedStart = route?.params?.startTime;
@@ -79,6 +82,45 @@ export function ReservationMapPage({ route }) {
       return;
     }
     setSelectedSeat(seat.id);
+    setSelectedSeatInfo(seat);
+  }
+
+  async function handleConfirm() {
+    if (!selectedSeat || !selectedSeatInfo) return;
+
+    try {
+      setConfirming(true);
+      console.log('[ReservationMap] Confirm pressed', {
+        seatId: selectedSeat,
+        seatName: selectedSeatInfo.name,
+        date: selectedDate,
+        startTime: selectedStart,
+        endTime: selectedEnd,
+      });
+
+      await reserveSlot({
+        kaynakId: selectedSeat,
+        resourceId: selectedSeat,
+        tarih: dateParam,
+        date: dateParam,
+        baslangicZamani: selectedStart,
+        bitisZamani: selectedEnd,
+        startTime: selectedStart,
+        endTime: selectedEnd,
+      });
+
+      Alert.alert('Rezervasyon Başarılı', `${selectedSeatInfo.name} için rezervasyon isteği gönderildi.`, [
+        { text: 'Tamam', onPress: () => navigation.getParent()?.navigate('MyReservations') },
+      ]);
+    } catch (error) {
+      console.log('[ReservationMap] Confirm failed', {
+        message: error?.message,
+        status: error?.response?.status,
+      });
+      Alert.alert('Rezervasyon Hatası', 'Rezervasyon oluşturulamadı. Lütfen tekrar deneyin.');
+    } finally {
+      setConfirming(false);
+    }
   }
 
   return (
@@ -116,8 +158,12 @@ export function ReservationMapPage({ route }) {
           {loadError ? <Text style={styles.errorText}>{loadError}</Text> : null}
         </View>
 
-        <Pressable style={[styles.confirmButton, !selectedSeat && styles.confirmDisabled]} disabled={!selectedSeat}>
-          <Text style={styles.confirmText}>Onayla</Text>
+        <Pressable
+          style={[styles.confirmButton, (!selectedSeat || confirming) && styles.confirmDisabled]}
+          disabled={!selectedSeat || confirming}
+          onPress={handleConfirm}
+        >
+          <Text style={styles.confirmText}>{confirming ? 'İşleniyor...' : 'Onayla'}</Text>
         </Pressable>
       </View>
     </SafeAreaView>

@@ -11,6 +11,12 @@ Bu depo, KURSU rezervasyon sistemi icin Expo React Native mobil istemciyi icerir
 - Ana ekran ve diger temel ekranlar Flutter tasarimina yakin sekilde React Native tarafinda uygulandi.
 - Servis (API) katmani ve yardimci (utils) yapisi genisletildi.
 
+## Hafta 3 Tamamlananlar
+
+- Alan/Kaynak listeleme ekrani mock veriden cikarilip API ile calisir hale getirildi.
+- Kaynak detay ekrani eklendi ve kaynaklarin uygunluk detaylari gosterilmeye baslandi.
+- Ana sayfada Son Duyurular bolumu API'den aktif duyurulari gosterecek sekilde guncellendi.
+
 ## Calistirma
 
 1. Bagimliliklari yukle:

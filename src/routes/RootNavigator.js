@@ -4,6 +4,7 @@ import { HomePage } from '../pages/HomePage';
 import { LoginPage } from '../pages/LoginPage';
 import { RegisterPage } from '../pages/RegisterPage';
 import { ResourceListPage } from '../pages/ResourceListPage';
+import { ResourceDetailPage } from '../pages/ResourceDetailPage';
 import { ReservationCreatePage } from '../pages/ReservationCreatePage';
 import { MyReservationsPage } from '../pages/MyReservationsPage';
 import { QrCheckPage } from '../pages/QrCheckPage';
@@ -43,6 +44,7 @@ export function RootNavigator() {
       <Stack.Screen name="Login" component={LoginPage} options={{ title: 'KURSU Login' }} />
       <Stack.Screen name="Register" component={RegisterPage} options={{ title: 'Create Account' }} />
       <Stack.Screen name="Main" component={MainTabs} options={{ headerShown: false }} />
+      <Stack.Screen name="ResourceDetail" component={ResourceDetailPage} options={{ title: 'Kaynak Detayi' }} />
       <Stack.Screen name="ReservationCreate" component={ReservationCreatePage} options={{ title: 'Create Reservation' }} />
       <Stack.Screen name="ReservationForm" component={ReservationFormPage} options={{ title: 'Koltuk Rezervasyonu' }} />
       <Stack.Screen name="ReservationMap" component={ReservationMapPage} options={{ title: 'Detaylı Bilgi' }} />

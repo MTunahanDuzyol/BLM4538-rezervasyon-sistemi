@@ -1,4 +1,4 @@
-import { Alert, Pressable, SafeAreaView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, SafeAreaView, StyleSheet, Text, View } from 'react-native';
 import { isLoggedIn } from '../services/authSession';
 
 function MenuItem({ title, onPress }) {
@@ -29,7 +29,7 @@ export function MenuPage({ navigation }) {
       <View style={styles.content}>
         <MenuItem title="Koltuk Rezervasyonu" onPress={() => navigation.navigate('ReservationForm')} />
         <MenuItem title="QR ile Giriş" onPress={() => navigation.navigate('MobilePass')} />
-        <MenuItem title="Duyurular" onPress={() => Alert.alert('Bilgi', 'Yakın zamanda hizmete girecektir.')} />
+        <MenuItem title="Duyurular" onPress={() => navigation.navigate('Announcements')} />
       </View>
     </SafeAreaView>
   );

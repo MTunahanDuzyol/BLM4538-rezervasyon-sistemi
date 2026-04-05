@@ -1,8 +1,46 @@
-import { Pressable, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { ActivityIndicator, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { getActiveAnnouncements } from '../features/announcements/api';
 
 const PRIMARY = '#6B998B';
 
 export function HomePage({ navigation }) {
+  const [announcements, setAnnouncements] = useState([]);
+  const [announcementsLoading, setAnnouncementsLoading] = useState(true);
+  const [announcementsError, setAnnouncementsError] = useState('');
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadAnnouncements() {
+      try {
+        setAnnouncementsLoading(true);
+        setAnnouncementsError('');
+
+        const response = await getActiveAnnouncements();
+        const payload = Array.isArray(response?.data) ? response.data : [];
+        const normalized = payload.slice(0, 5).map((item, index) => ({
+          id: String(item?.id ?? item?.Id ?? index + 1),
+          title: String(item?.baslik ?? item?.Baslik ?? item?.title ?? item?.Title ?? 'Duyuru'),
+          description: String(item?.icerik ?? item?.Icerik ?? item?.aciklama ?? item?.Aciklama ?? item?.description ?? item?.Description ?? ''),
+        }));
+
+        if (!active) return;
+        setAnnouncements(normalized);
+      } catch (err) {
+        if (!active) return;
+        setAnnouncementsError('Duyurular su an yuklenemiyor.');
+      } finally {
+        if (active) setAnnouncementsLoading(false);
+      }
+    }
+
+    loadAnnouncements();
+    return () => {
+      active = false;
+    };
+  }, []);
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.topBar}>
@@ -33,10 +71,37 @@ export function HomePage({ navigation }) {
         </View>
 
         <Text style={styles.sectionTitle}>Son Duyurular</Text>
-        <Pressable style={styles.announcementCard}>
-          <Text style={styles.announcementText}>Kullanım bilgisi bulunamamaktadır.</Text>
-          <Text style={styles.infoIcon}>i</Text>
-        </Pressable>
+
+        {announcementsLoading ? (
+          <View style={styles.announcementsStateWrap}>
+            <ActivityIndicator color="#6B998B" />
+            <Text style={styles.announcementText}>Duyurular yukleniyor...</Text>
+          </View>
+        ) : null}
+
+        {!announcementsLoading && announcementsError ? (
+          <View style={styles.announcementsStateWrap}>
+            <Text style={styles.announcementErrorText}>{announcementsError}</Text>
+          </View>
+        ) : null}
+
+        {!announcementsLoading && !announcementsError && announcements.length === 0 ? (
+          <View style={styles.announcementsStateWrap}>
+            <Text style={styles.announcementText}>Aktif duyuru bulunmamaktadir.</Text>
+          </View>
+        ) : null}
+
+        {!announcementsLoading && !announcementsError && announcements.length > 0
+          ? announcements.map((announcement) => (
+            <View key={announcement.id} style={styles.announcementCard}>
+              <View style={styles.announcementContent}>
+                <Text style={styles.announcementTitle}>{announcement.title}</Text>
+                <Text style={styles.announcementText} numberOfLines={2}>{announcement.description || 'Detay metni yakinda eklenecektir.'}</Text>
+              </View>
+              <Text style={styles.infoIcon}>i</Text>
+            </View>
+          ))
+          : null}
 
         <View style={styles.gridRow}>
           <Pressable
@@ -140,11 +205,35 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
   },
+  announcementContent: {
+    flex: 1,
+    paddingRight: 10,
+  },
+  announcementsStateWrap: {
+    borderWidth: 1,
+    borderColor: '#d5dce2',
+    borderRadius: 12,
+    backgroundColor: '#ffffff',
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+    alignItems: 'center',
+    gap: 8,
+  },
+  announcementTitle: {
+    color: '#0f172a',
+    fontSize: 14,
+    fontWeight: '700',
+    marginBottom: 4,
+  },
   announcementText: {
     color: '#1e293b',
     fontSize: 14,
     flex: 1,
-    paddingRight: 10,
+  },
+  announcementErrorText: {
+    color: '#b91c1c',
+    fontSize: 14,
+    textAlign: 'center',
   },
   infoIcon: {
     color: '#64748b',
