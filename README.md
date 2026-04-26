@@ -26,6 +26,15 @@ Asagidaki ozet, su ana kadar yapilanlari hafta bazinda sade sekilde anlatir.
 - Ana sayfadaki duyuru alani aktif duyurulari API'den okuyacak sekilde guncellendi.
 - Duyurular icin ayri ekran olusturuldu ve listeleme davranisi eklendi.
 
+## Hafta 4 - Slot Listeleme ve Rezervasyon
+
+- Rezervasyon akisi tarih secimi + masa secimi + 60 dakikalik slot secimi olacak sekilde guncellendi.
+- Slot listesi backend'deki `GET /api/rezervasyon/slots` endpointinden alinip ekranda gosterilmeye baslandi.
+- Sadece uygun (Musait) slotlar secilebilir hale getirildi.
+- Rezervasyon olusturma, secilen slot icin `POST /api/rezervasyon/slots/reserve` ile calisacak sekilde tamamlandi.
+- Coklu slot secimi eklendi: kullanici sadece ardisik slotlardan secim yapabilir ve bir gunde en fazla 4 saatlik aralik secilebilir.
+- Parcali secim (arada bosluk birakarak slot toplama) arayuz seviyesinde engellendi.
+
 ## Mevcut Ekranlar (Ozet)
 
 - Login / Register

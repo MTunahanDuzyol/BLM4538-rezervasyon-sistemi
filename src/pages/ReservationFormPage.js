@@ -12,32 +12,12 @@ function FieldTile({ label, value, onPress }) {
 
 export function ReservationFormPage({ navigation }) {
   const [reservationDate, setReservationDate] = useState(new Date());
-  const [startTime, setStartTime] = useState(() => {
-    const now = new Date();
-    now.setMinutes(0, 0, 0);
-    now.setHours(Math.max(8, now.getHours()));
-    return now;
-  });
-  const [endTime, setEndTime] = useState(() => {
-    const next = new Date();
-    next.setMinutes(0, 0, 0);
-    next.setHours(Math.max(9, next.getHours() + 1));
-    return next;
-  });
   const [pickerTarget, setPickerTarget] = useState('date');
   const [showPicker, setShowPicker] = useState(false);
 
   const formattedDate = useMemo(() => {
     return reservationDate.toLocaleDateString('tr-TR');
   }, [reservationDate]);
-
-  const formattedStart = useMemo(() => {
-    return startTime.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
-  }, [startTime]);
-
-  const formattedEnd = useMemo(() => {
-    return endTime.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
-  }, [endTime]);
 
   const dateOptions = useMemo(() => {
     return Array.from({ length: 14 }).map((_, index) => {
@@ -57,17 +37,6 @@ export function ReservationFormPage({ navigation }) {
     });
   }, []);
 
-  const timeOptions = useMemo(() => {
-    const options = [];
-    for (let hour = 8; hour <= 23; hour += 1) {
-      for (let minute = 0; minute <= 30; minute += 30) {
-        const label = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
-        options.push({ key: label, label, hour, minute });
-      }
-    }
-    return options;
-  }, []);
-
   function openPicker(target) {
     setPickerTarget(target);
     setShowPicker(true);
@@ -80,32 +49,9 @@ export function ReservationFormPage({ navigation }) {
     setShowPicker(false);
   }
 
-  function selectTime(hour, minute) {
-    const next = pickerTarget === 'start' ? new Date(startTime) : new Date(endTime);
-    next.setHours(hour, minute, 0, 0);
-
-    if (pickerTarget === 'start') {
-      setStartTime(next);
-    } else {
-      setEndTime(next);
-    }
-
-    setShowPicker(false);
-  }
-
   function handleContinue() {
-    const startMinutes = startTime.getHours() * 60 + startTime.getMinutes();
-    const endMinutes = endTime.getHours() * 60 + endTime.getMinutes();
-
-    if (endMinutes <= startMinutes) {
-      Alert.alert('Geçersiz saat', 'Bitiş saati başlangıç saatinden sonra olmalıdır.');
-      return;
-    }
-
     navigation.navigate('ReservationMap', {
       date: reservationDate.toISOString(),
-      startTime: formattedStart,
-      endTime: formattedEnd,
     });
   }
 
@@ -114,11 +60,13 @@ export function ReservationFormPage({ navigation }) {
       <View style={styles.header}><Text style={styles.headerTitle}>Koltuk Rezervasyonu</Text></View>
       <View style={styles.content}>
         <FieldTile label="Rezerve Tarihi" value={formattedDate} onPress={() => openPicker('date')} />
-        <FieldTile label="Başlangıç Saati" value={formattedStart} onPress={() => openPicker('start')} />
-        <FieldTile label="Bitiş Saati" value={formattedEnd} onPress={() => openPicker('end')} />
+
+        <View style={styles.infoCard}>
+          <Text style={styles.infoText}>Bir sonraki ekranda seçtiğiniz tarih için 60 dakikalık uygun slotlar listelenecektir.</Text>
+        </View>
 
         <Pressable style={styles.primaryButton} onPress={handleContinue}>
-          <Text style={styles.primaryText}>Kaydet / Devam</Text>
+          <Text style={styles.primaryText}>Masalari ve Slotlari Goster</Text>
         </Pressable>
       </View>
 
@@ -126,25 +74,15 @@ export function ReservationFormPage({ navigation }) {
         <View style={styles.modalOverlay}>
           <View style={styles.modalCard}>
             <Text style={styles.modalTitle}>
-              {pickerTarget === 'date' ? 'Tarih Seçin' : pickerTarget === 'start' ? 'Başlangıç Saati Seçin' : 'Bitiş Saati Seçin'}
+              Tarih Seçin
             </Text>
 
             <ScrollView style={styles.modalList}>
-              {pickerTarget === 'date'
-                ? dateOptions.map((item) => (
-                    <Pressable key={item.key} style={styles.optionItem} onPress={() => selectDate(item.value)}>
-                      <Text style={styles.optionText}>{item.label}</Text>
-                    </Pressable>
-                  ))
-                : timeOptions.map((item) => (
-                    <Pressable
-                      key={item.key}
-                      style={styles.optionItem}
-                      onPress={() => selectTime(item.hour, item.minute)}
-                    >
-                      <Text style={styles.optionText}>{item.label}</Text>
-                    </Pressable>
-                  ))}
+              {dateOptions.map((item) => (
+                <Pressable key={item.key} style={styles.optionItem} onPress={() => selectDate(item.value)}>
+                  <Text style={styles.optionText}>{item.label}</Text>
+                </Pressable>
+              ))}
             </ScrollView>
 
             <Pressable style={styles.cancelButton} onPress={() => setShowPicker(false)}>
@@ -174,6 +112,23 @@ const styles = StyleSheet.create({
   },
   fieldLabel: { color: '#0f172a', fontWeight: '500' },
   fieldValue: { color: '#334155', fontWeight: '600' },
+  infoCard: {
+    borderWidth: 1,
+    borderColor: '#d4dde3',
+    borderRadius: 12,
+    backgroundColor: '#f8fafc',
+    padding: 12,
+  },
+  infoTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#0f172a',
+    marginBottom: 4,
+  },
+  infoText: {
+    color: '#334155',
+    lineHeight: 20,
+  },
   primaryButton: {
     marginTop: 12,
     height: 48,

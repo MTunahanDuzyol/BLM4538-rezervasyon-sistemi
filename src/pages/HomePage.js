@@ -4,10 +4,25 @@ import { getActiveAnnouncements } from '../features/announcements/api';
 
 const PRIMARY = '#6B998B';
 
-export function HomePage({ navigation }) {
+export function HomePage({ navigation, route }) {
   const [announcements, setAnnouncements] = useState([]);
   const [announcementsLoading, setAnnouncementsLoading] = useState(true);
   const [announcementsError, setAnnouncementsError] = useState('');
+  const [successBanner, setSuccessBanner] = useState('');
+
+  useEffect(() => {
+    const message = route?.params?.reservationSuccess;
+    if (!message) return;
+
+    setSuccessBanner(message);
+    navigation.setParams({ reservationSuccess: undefined });
+
+    const timer = setTimeout(() => {
+      setSuccessBanner('');
+    }, 4500);
+
+    return () => clearTimeout(timer);
+  }, [navigation, route?.params?.reservationSuccess]);
 
   useEffect(() => {
     let active = true;
@@ -56,6 +71,12 @@ export function HomePage({ navigation }) {
       </View>
 
       <ScrollView contentContainerStyle={styles.content}>
+        {successBanner ? (
+          <View style={styles.successBanner}>
+            <Text style={styles.successBannerText}>{successBanner}</Text>
+          </View>
+        ) : null}
+
         <View style={styles.searchRow}>
           <TextInput
             style={styles.searchInput}
@@ -158,6 +179,18 @@ const styles = StyleSheet.create({
   content: {
     padding: 16,
     gap: 16,
+  },
+  successBanner: {
+    borderWidth: 1,
+    borderColor: '#86efac',
+    backgroundColor: '#f0fdf4',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  successBannerText: {
+    color: '#166534',
+    fontWeight: '600',
   },
   searchRow: {
     flexDirection: 'row',
