@@ -1,7 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, Platform, Pressable, SafeAreaView, StyleSheet, Text, View } from 'react-native';
 import { getResources } from '../features/resources/api';
-import { createReservationWithConfig, getReservationSlots, reserveSlotWithConfig } from '../features/reservations/api';
+import { createReservationWithConfig, getMyReservations, getReservationSlots, reserveSlotWithConfig } from '../features/reservations/api';
+import {
+  getBlockingReservationForDate,
+  normalizeReservationError,
+} from '../features/reservations/businessRules';
 import { getAuthUser } from '../services/authSession';
 
 export function ReservationMapPage({ navigation, route }) {
@@ -208,9 +212,31 @@ export function ReservationMapPage({ navigation, route }) {
     const startHour = selectedRange.start;
     const endHour = selectedRange.end;
 
+    if (!areSelectedSlotsAvailable(slots, startHour, endHour)) {
+      const slotMessage = 'Seçilen slotlar artık uygun değil. Lütfen listeyi yenileyin.';
+      setConfirmStatus(slotMessage);
+      setConfirmError(slotMessage);
+      Alert.alert('Slot Uygun Değil', slotMessage);
+      return;
+    }
+
     try {
       setConfirming(true);
       setConfirmError('');
+      setConfirmStatus('Mevcut rezervasyonlar kontrol ediliyor...');
+
+      const reservationsResponse = await getMyReservations();
+      const reservations = Array.isArray(reservationsResponse?.data) ? reservationsResponse.data : [];
+      const blockingReservation = getBlockingReservationForDate(reservations, dateParam);
+
+      if (blockingReservation) {
+        const blockMessage = 'Bu gün için zaten aktif bir rezervasyonunuz var. Önce mevcut rezervasyonu iptal edin.';
+        setConfirmStatus(blockMessage);
+        setConfirmError(blockMessage);
+        Alert.alert('Rezervasyon Sınırı', blockMessage);
+        return;
+      }
+
       setConfirmStatus('Rezervasyon istegi gonderiliyor...');
       console.log('[ReservationMap] Confirm pressed', {
         seatId: selectedSeat,
@@ -418,34 +444,7 @@ function extractApiErrorMessage(error, fallbackMessage) {
 }
 
 function friendlyReservationError(error, fallbackMessage = 'Rezervasyon oluşturulamadı.') {
-  const message = extractApiErrorMessage(error, fallbackMessage);
-  const normalized = String(message || '').toLowerCase();
-
-  if (normalized.includes('aynı gün içinde yalnızca tek rezervasyon')) {
-    return 'Bu gün için zaten bir rezervasyonunuz var. Farklı bir gün seçin.';
-  }
-
-  if (normalized.includes('bu saatlerde zaten bir rezervasyonunuz var')) {
-    return 'Bu saat aralığında başka bir rezervasyonunuz var. Farklı bir aralık seçin.';
-  }
-
-  if (normalized.includes('maksimum 4 saat')) {
-    return 'En fazla 4 saatlik ardışık slot seçebilirsiniz.';
-  }
-
-  if (normalized.includes('oturum bilgisi eksik')) {
-    return 'Oturum bilgisi bulunamadı. Lütfen tekrar giriş yapın.';
-  }
-
-  if (normalized.includes('alan bulunamadı')) {
-    return 'Seçilen masa bulunamadı. Lütfen yeniden masa seçin.';
-  }
-
-  if (normalized.includes('geçmiş saatlere rezervasyon yapamazsınız')) {
-    return 'Geçmiş saatlere rezervasyon yapamazsınız. Lütfen ileri bir saat seçin.';
-  }
-
-  return message;
+  return normalizeReservationError(error, fallbackMessage);
 }
 
 function parseHourMinute(value) {
@@ -461,6 +460,21 @@ function buildIsoDateTime(dateText, hour) {
   if (!dateText || hour == null) return null;
   const hh = String(hour).padStart(2, '0');
   return `${dateText}T${hh}:00:00`;
+}
+
+function areSelectedSlotsAvailable(slots, startHour, endHour) {
+  if (!Array.isArray(slots) || startHour == null || endHour == null || endHour <= startHour) {
+    return false;
+  }
+
+  for (let hour = startHour; hour < endHour; hour += 1) {
+    const slot = slots.find((item) => item.hour === hour);
+    if (!slot || slot.status !== 'Musait') {
+      return false;
+    }
+  }
+
+  return true;
 }
 
 function formatHourLabel(hour) {
@@ -484,22 +498,7 @@ function slotStartToMinute(slot) {
 }
 
 function checkSeatAvailability(slots, selectedStart, selectedEnd) {
-  const start = parseHourMinute(selectedStart);
-  const end = parseHourMinute(selectedEnd);
-
-  if (start == null || end == null || end <= start) return false;
-
-  const required = [];
-  for (let minute = start; minute < end; minute += 60) {
-    required.push(minute);
-  }
-
-  return required.every((requiredMinute) => {
-    const matchingSlot = slots.find((slot) => slotStartToMinute(slot) === requiredMinute);
-    if (!matchingSlot) return false;
-    const available = matchingSlot?.uygunMu ?? matchingSlot?.UygunMu ?? matchingSlot?.isAvailable;
-    return available === true;
-  });
+  return areSelectedSlotsAvailable(slots, selectedStart, selectedEnd);
 }
 
 const styles = StyleSheet.create({

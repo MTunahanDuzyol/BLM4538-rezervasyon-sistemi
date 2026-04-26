@@ -35,6 +35,14 @@ Asagidaki ozet, su ana kadar yapilanlari hafta bazinda sade sekilde anlatir.
 - Coklu slot secimi eklendi: kullanici sadece ardisik slotlardan secim yapabilir ve bir gunde en fazla 4 saatlik aralik secilebilir.
 - Parcali secim (arada bosluk birakarak slot toplama) arayuz seviyesinde engellendi.
 
+## Hafta 5 - Rezervasyonlarım ve İş Kuralı Kontrolleri
+
+- `Benim Rezervasyonlarım` ekranı backend'den gerçek rezervasyon listesini okuyacak şekilde düzenlendi.
+- Kullanıcı kendi rezervasyonunu ekrandan iptal edebilir hale getirildi.
+- Başlamış, bitmiş veya iptal edilmiş rezervasyonlar için iptal aksiyonu engellendi.
+- Rezervasyon oluştururken aktif rezervasyon sınırı ve güncel slot uygunluğu kontrol edilmeye başlandı.
+- Backend hata mesajları daha okunur kullanıcı mesajlarına dönüştürüldü.
+
 ## Mevcut Ekranlar (Ozet)
 
 - Login / Register
