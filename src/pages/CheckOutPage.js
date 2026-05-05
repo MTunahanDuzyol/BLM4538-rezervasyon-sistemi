@@ -1,5 +1,6 @@
-import { useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, SafeAreaView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { ActivityIndicator, Alert, Pressable, SafeAreaView, StyleSheet, Text, TextInput, View, Platform, Linking } from 'react-native';
+import { BarCodeScanner } from 'expo-barcode-scanner';
 import { confirmCheckOut } from '../features/qr/api';
 
 export function CheckOutPage() {
@@ -8,6 +9,9 @@ export function CheckOutPage() {
   const [loading, setLoading] = useState(false);
   const [resultText, setResultText] = useState('');
   const [success, setSuccess] = useState(null);
+  const [hasPermission, setHasPermission] = useState(null);
+  const [scanned, setScanned] = useState(false);
+  const [scanData, setScanData] = useState('');
 
   async function submit() {
     if (!reservationId.trim()) {
@@ -30,14 +34,96 @@ export function CheckOutPage() {
     }
   }
 
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const { status } = await BarCodeScanner.requestPermissionsAsync();
+        if (mounted) {
+          const ok = status === 'granted';
+          setHasPermission(ok);
+          if (!ok || Platform.OS === 'web') setManualMode(true);
+        }
+      } catch (e) {
+        if (mounted) {
+          setHasPermission(false);
+          setManualMode(true);
+        }
+      }
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  async function handleBarCodeScanned({ data }) {
+    if (scanned) return;
+    setScanned(true);
+    setScanData(String(data));
+    const match = String(data).match(/(\d+)/);
+    if (!match) {
+      setResultText('QR kodu tanınamadı. Manuel giriş yapınız.');
+      setSuccess(false);
+      setScanned(false);
+      return;
+    }
+
+    const id = match[1];
+    setResultText('Check-out yapılıyor...');
+    setSuccess(null);
+    setLoading(true);
+    try {
+      await confirmCheckOut(id);
+      setResultText('Check-out başarılı.');
+      setSuccess(true);
+    } catch (error) {
+      setResultText(error?.response?.data?.message || 'Check-out işlemi başarısız.');
+      setSuccess(false);
+    } finally {
+      setLoading(false);
+      setTimeout(() => setScanned(false), 1500);
+    }
+  }
+
+  async function tryEnableCamera() {
+    try {
+      const { status } = await BarCodeScanner.requestPermissionsAsync();
+      const ok = status === 'granted';
+      setHasPermission(ok);
+      if (ok) setManualMode(false);
+      else Alert.alert('Kamera izni yok', 'Lütfen cihaz ayarlarından kamera izni verin.');
+    } catch (e) {
+      Alert.alert('Hata', 'Kamera izni alınamadı.');
+    }
+  }
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.header}><Text style={styles.headerTitle}>Check-out</Text></View>
       <View style={styles.content}>
-        <View style={styles.scannerBox}>
-          <Text style={styles.scannerText}>QR kodu çerçeve içine getirin</Text>
-          <Text style={styles.scannerSub}>Kamera entegrasyonu yakın zamanda hizmete girecektir.</Text>
-        </View>
+        {!manualMode ? (
+          <View style={styles.scannerBox}>
+            {hasPermission === null ? (
+              <Text style={styles.scannerText}>Kamera izni kontrol ediliyor...</Text>
+            ) : hasPermission === false ? (
+              <View>
+                <Text style={styles.scannerText}>Kamera izni yok. Ayarlardan izin verin veya manuel giriş yapın.</Text>
+                <Pressable style={[styles.primaryButton, { marginTop: 12 }]} onPress={() => setManualMode(true)}>
+                  <Text style={styles.primaryText}>Manuel Girişe Geç</Text>
+                </Pressable>
+              </View>
+            ) : (
+              <View style={{ flex: 1, width: '100%', borderRadius: 12, overflow: 'hidden' }}>
+                <BarCodeScanner onBarCodeScanned={scanned ? undefined : handleBarCodeScanned} style={{ flex: 1 }} />
+              </View>
+            )}
+          </View>
+        ) : (
+          <View style={styles.scannerBox}>
+            <Text style={styles.scannerText}>QR kodu çerçeve içine getirin</Text>
+            <Text style={styles.scannerSub}>Kamera entegrasyonu yakın zamanda hizmete girecektir.</Text>
+          </View>
+        )}
 
         <Pressable style={styles.toggleButton} onPress={() => setManualMode((v) => !v)}>
           <Text style={styles.toggleText}>{manualMode ? 'QR Kod Tarama' : 'Manuel Kod Girişi'}</Text>
@@ -55,12 +141,21 @@ export function CheckOutPage() {
             <Pressable style={styles.primaryButton} onPress={submit} disabled={loading}>
               {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.primaryText}>Check-out Yap</Text>}
             </Pressable>
+            <Pressable style={[styles.primaryButton, { marginTop: 10, backgroundColor: '#334155' }]} onPress={tryEnableCamera}>
+              <Text style={styles.primaryText}>Kamerayı Aç</Text>
+            </Pressable>
           </View>
         ) : null}
 
         {resultText ? (
           <View style={[styles.resultBox, success === true ? styles.resultOk : success === false ? styles.resultErr : null]}>
             <Text style={styles.resultText}>{resultText}</Text>
+          </View>
+        ) : null}
+        {scanData ? (
+          <View style={[styles.resultBox, { marginTop: 8 }]}> 
+            <Text style={[styles.resultText, { fontWeight: '600' }]}>Ham QR veri:</Text>
+            <Text style={styles.resultText}>{scanData}</Text>
           </View>
         ) : null}
       </View>

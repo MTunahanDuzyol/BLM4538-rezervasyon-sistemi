@@ -1,6 +1,11 @@
 import { apiClient } from '../../services/apiClient';
+import { isDemoUser } from '../../services/authSession';
 
 export async function getMyReservations() {
+  if (isDemoUser()) {
+    return { data: [] };
+  }
+
   return apiClient.get('/api/rezervasyon/my');
 }
 

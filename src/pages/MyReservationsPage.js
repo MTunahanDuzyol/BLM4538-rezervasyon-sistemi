@@ -11,6 +11,7 @@ import {
   normalizeReservationError,
   normalizeReservationStatus,
 } from '../features/reservations/businessRules';
+import { isDemoUser } from '../services/authSession';
 
 function formatReservationText(item) {
   const areaName = item?.alanAdi || item?.kaynakAdi || item?.alanId || 'Alan';
@@ -52,6 +53,8 @@ export function MyReservationsPage() {
   const [cancelingId, setCancelingId] = useState(null);
   const [cancelledReservationIds, setCancelledReservationIds] = useState([]);
 
+  const demoMode = isDemoUser();
+
   function applyLocalReservationState(reservationItems) {
     return reservationItems.map((item) => {
       const reservationId = getReservationId(item);
@@ -64,6 +67,14 @@ export function MyReservationsPage() {
   }
 
   const loadReservations = useCallback(async (isRefresh = false) => {
+    if (demoMode) {
+      setError('');
+      setItems([]);
+      setLoading(false);
+      setRefreshing(false);
+      return;
+    }
+
     try {
       if (isRefresh) {
         setRefreshing(true);
@@ -81,7 +92,7 @@ export function MyReservationsPage() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, []);
+  }, [demoMode]);
 
   const handleCancelReservation = useCallback(async (item) => {
     const reservationId = getReservationId(item);
@@ -181,7 +192,13 @@ export function MyReservationsPage() {
               </View>
             </View>
           )}
-          ListEmptyComponent={<Text style={styles.infoText}>Aktif rezervasyon bulunmamaktadır.</Text>}
+          ListEmptyComponent={
+            <Text style={styles.infoText}>
+              {demoMode
+                ? 'Demo hesapta gerçek rezervasyonlar gösterilmez.'
+                : 'Aktif rezervasyon bulunmamaktadır.'}
+            </Text>
+          }
           ListFooterComponent={<HomeReturnButton />}
         />
       ) : null}

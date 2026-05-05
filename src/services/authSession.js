@@ -8,6 +8,10 @@ export function getAuthUser() {
   return currentUser;
 }
 
+export function isDemoUser() {
+  return Boolean(currentUser?.isDemo);
+}
+
 export function isLoggedIn() {
   return Boolean(currentUser);
 }

@@ -5,6 +5,7 @@ import {
   Pressable,
   SafeAreaView,
   ScrollView,
+  Platform,
   StyleSheet,
   Switch,
   Text,
@@ -15,6 +16,18 @@ import { login } from '../features/auth/api';
 import { setAuthUser } from '../services/authSession';
 
 const PRIMARY = '#6B998B';
+const DEMO_ACCOUNT = {
+  identity: 'demo@kursu.local',
+  password: 'Demo1234!',
+  user: {
+    id: 'demo-user',
+    email: 'demo@kursu.local',
+    adSoyad: 'Demo Kullanıcı',
+    rol: 'demo',
+    okulNo: '999999',
+    isDemo: true,
+  },
+};
 
 export function LoginPage({ navigation }) {
   const [identity, setIdentity] = useState('');
@@ -46,6 +59,16 @@ export function LoginPage({ navigation }) {
 
     if (!normalizedPassword) {
       showStatusMessage('Uyarı', 'Lütfen şifre girin.');
+      return;
+    }
+
+    if (
+      normalizedIdentity.toLowerCase() === DEMO_ACCOUNT.identity &&
+      normalizedPassword === DEMO_ACCOUNT.password
+    ) {
+      setAuthUser(DEMO_ACCOUNT.user);
+      setLoginStatus('Demo hesap ile giriş başarılı. Ana sayfaya yönlendiriliyor...');
+      navigation.replace('Main');
       return;
     }
 
@@ -86,6 +109,16 @@ export function LoginPage({ navigation }) {
     } finally {
       setIsSubmitting(false);
     }
+  }
+
+  function handleDemoLogin() {
+    if (isSubmitting) {
+      return;
+    }
+
+    setAuthUser(DEMO_ACCOUNT.user);
+    setLoginStatus('Demo hesap ile giriş başarılı. Ana sayfaya yönlendiriliyor...');
+    navigation.replace('Main');
   }
 
   return (
@@ -147,6 +180,17 @@ export function LoginPage({ navigation }) {
               <Text style={styles.linkText}>Şifremi Unuttum?</Text>
             </Pressable>
           </View>
+
+          <View style={styles.demoCard}>
+            <Text style={styles.demoTitle}>Demo Hesap</Text>
+            <Text style={styles.demoText}>Ekranlara hızlı erişim için aşağıdaki bilgilerle giriş yapabilirsin.</Text>
+            <Text style={styles.demoText}>E-posta: {DEMO_ACCOUNT.identity}</Text>
+            <Text style={styles.demoText}>Şifre: {DEMO_ACCOUNT.password}</Text>
+          </View>
+
+          <Pressable style={styles.secondaryButton} onPress={handleDemoLogin}>
+            <Text style={styles.secondaryButtonText}>Demo Hesapla Giriş Yap</Text>
+          </Pressable>
 
           <Pressable style={[styles.primaryButton, isSubmitting && styles.primaryButtonDisabled]} onPress={handleLogin} disabled={isSubmitting}>
             {isSubmitting ? (
@@ -273,6 +317,40 @@ const styles = StyleSheet.create({
   linkText: {
     color: '#0f766e',
     fontWeight: '500',
+  },
+  demoCard: {
+    borderWidth: 1,
+    borderColor: '#dbe4df',
+    backgroundColor: '#f7fbf9',
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 14,
+  },
+  demoTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#0f172a',
+    marginBottom: 6,
+  },
+  demoText: {
+    fontSize: 13,
+    lineHeight: 18,
+    color: '#334155',
+  },
+  secondaryButton: {
+    borderWidth: 1,
+    borderColor: PRIMARY,
+    backgroundColor: '#ffffff',
+    height: 48,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 10,
+  },
+  secondaryButtonText: {
+    color: PRIMARY,
+    fontSize: 15,
+    fontWeight: '700',
   },
   primaryButton: {
     backgroundColor: PRIMARY,
