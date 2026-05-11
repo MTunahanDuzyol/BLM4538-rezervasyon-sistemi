@@ -43,6 +43,14 @@ Asagidaki ozet, su ana kadar yapilanlari hafta bazinda sade sekilde anlatir.
 - Rezervasyon oluştururken aktif rezervasyon sınırı ve güncel slot uygunluğu kontrol edilmeye başlandı.
 - Backend hata mesajları daha okunur kullanıcı mesajlarına dönüştürüldü.
 
+## Hafta 7 - İhlâl / Ceza Puanı Ekranları, UI İyileştirme ve Teknik Geliştirmeler
+
+- İhlâl ve ceza puanı ekranları tamamlandı.
+- İlgili backend endpoint entegrasyonları yapıldı.
+- UI iyileştirmeleri ile ekranların okunabilirliği ve akış tutarlılığı artırıldı.
+- Test senaryoları gözden geçirilerek kritik akışlar doğrulandı.
+- Performans iyileştirmeleri ve hata düzeltmeleri tamamlandı.
+
 ## Mevcut Ekranlar (Ozet)
 
 - Login / Register

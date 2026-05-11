@@ -30,6 +30,7 @@ export function MenuPage({ navigation }) {
         <MenuItem title="Koltuk Rezervasyonu" onPress={() => navigation.navigate('ReservationForm')} />
         <MenuItem title="QR ile Giriş" onPress={() => navigation.navigate('MobilePass')} />
         <MenuItem title="Duyurular" onPress={() => navigation.navigate('Announcements')} />
+        <MenuItem title="Ceza ve İhlaller" onPress={() => navigation.navigate('Penalty')} />
       </View>
     </SafeAreaView>
   );

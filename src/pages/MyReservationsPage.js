@@ -67,14 +67,6 @@ export function MyReservationsPage() {
   }
 
   const loadReservations = useCallback(async (isRefresh = false) => {
-    if (demoMode) {
-      setError('');
-      setItems([]);
-      setLoading(false);
-      setRefreshing(false);
-      return;
-    }
-
     try {
       if (isRefresh) {
         setRefreshing(true);

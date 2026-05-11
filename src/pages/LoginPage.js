@@ -14,20 +14,9 @@ import {
 } from 'react-native';
 import { login } from '../features/auth/api';
 import { setAuthUser } from '../services/authSession';
+import { DEMO_ACCOUNT } from '../services/demoData';
 
 const PRIMARY = '#6B998B';
-const DEMO_ACCOUNT = {
-  identity: 'demo@kursu.local',
-  password: 'Demo1234!',
-  user: {
-    id: 'demo-user',
-    email: 'demo@kursu.local',
-    adSoyad: 'Demo Kullanıcı',
-    rol: 'demo',
-    okulNo: '999999',
-    isDemo: true,
-  },
-};
 
 export function LoginPage({ navigation }) {
   const [identity, setIdentity] = useState('');

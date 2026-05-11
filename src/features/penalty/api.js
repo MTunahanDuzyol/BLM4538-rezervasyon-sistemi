@@ -1,10 +1,20 @@
 import { apiClient } from '../../services/apiClient';
+import { isDemoUser } from '../../services/authSession';
+import { DEMO_PENALTY } from '../../services/demoData';
 
 export async function getMyViolations() {
+  if (isDemoUser()) {
+    return { data: DEMO_PENALTY.violations };
+  }
+
   return apiClient.get('/api/ihlal/me');
 }
 
 export async function getMyPenaltyScore() {
+  if (isDemoUser()) {
+    return { data: { puan: DEMO_PENALTY.score } };
+  }
+
   return apiClient.get('/api/ihlal/me/puan');
 }
 
