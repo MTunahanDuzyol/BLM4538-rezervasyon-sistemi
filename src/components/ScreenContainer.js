@@ -1,13 +1,43 @@
-import { SafeAreaView, StyleSheet, Text, View } from 'react-native';
+import { SafeAreaView, StyleSheet, Text, View, ScrollView } from 'react-native';
+import { COLORS, SPACING, TYPOGRAPHY } from '../utils/theme';
 
-export function ScreenContainer({ title, subtitle, children }) {
+/**
+ * ScreenContainer - Standart Sayfa Layout Bileşeni
+ * 
+ * Özellikler:
+ * - Başlık ve alt başlık
+ * - Scroll enable/disable seçeneği
+ * - Standart padding ve renk
+ * 
+ * Kullanım:
+ * <ScreenContainer title="Başlık" subtitle="Alt başlık" scrollable>
+ *   <Content />
+ * </ScreenContainer>
+ */
+export function ScreenContainer({ 
+  title, 
+  subtitle, 
+  children,
+  scrollable = true,
+  backgroundColor = COLORS.slate50
+}) {
+  const contentView = (
+    <View style={styles.container}>
+      <Text style={styles.title}>{title}</Text>
+      {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
+      {children}
+    </View>
+  );
+
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <View style={styles.container}>
-        <Text style={styles.title}>{title}</Text>
-        {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
-        {children}
-      </View>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor }]}>
+      {scrollable ? (
+        <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
+          {contentView}
+        </ScrollView>
+      ) : (
+        contentView
+      )}
     </SafeAreaView>
   );
 }
@@ -15,22 +45,24 @@ export function ScreenContainer({ title, subtitle, children }) {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: COLORS.slate50,
   },
   container: {
     flex: 1,
-    paddingHorizontal: 20,
-    paddingTop: 20,
+    paddingHorizontal: SPACING.xl,
+    paddingTop: SPACING.xl,
+    paddingBottom: SPACING.lg,
   },
   title: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#0f172a',
+    fontSize: TYPOGRAPHY.size['2xl'],
+    fontWeight: TYPOGRAPHY.weight.bold,
+    color: COLORS.text,
+    marginBottom: SPACING.md,
   },
   subtitle: {
-    marginTop: 8,
-    marginBottom: 16,
-    color: '#334155',
-    fontSize: 14,
+    marginBottom: SPACING.lg,
+    color: COLORS.textSecondary,
+    fontSize: TYPOGRAPHY.size.sm,
+    lineHeight: 20,
   },
 });

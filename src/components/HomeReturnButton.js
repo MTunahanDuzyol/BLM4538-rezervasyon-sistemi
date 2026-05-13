@@ -1,6 +1,17 @@
 import { Pressable, StyleSheet, Text } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { COLORS, SPACING, TYPOGRAPHY, BORDER_RADIUS } from '../utils/theme';
 
+/**
+ * HomeReturnButton - Ana Sayfaya Dönüş Düğmesi
+ * 
+ * Özellikler:
+ * - Mevcut navigation state'ini kontrol eder
+ * - Gerekirse tab navigation üzerinde ana sayfaya gider
+ * 
+ * Kullanım:
+ * <HomeReturnButton />
+ */
 export function HomeReturnButton() {
   const navigation = useNavigation();
 
@@ -32,30 +43,36 @@ export function HomeReturnButton() {
 
       if (hasMainInParent) {
         parent.navigate('Main', { screen: 'Home' });
+        return;
       }
     }
+
+    // Fallback: Ana navigasyon stack'ine dön
+    navigation.replace('Main', { screen: 'Home' });
   }
 
   return (
     <Pressable style={styles.button} onPress={goHome}>
-      <Text style={styles.text}>Ana Sayfaya Don</Text>
+      <Text style={styles.text}>← Ana Sayfaya Dön</Text>
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
   button: {
-    marginTop: 16,
+    marginTop: SPACING.xl,
     borderWidth: 1,
-    borderColor: '#6B998B',
-    borderRadius: 10,
-    height: 44,
+    borderColor: COLORS.primary,
+    borderRadius: BORDER_RADIUS.md,
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.md,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#f8fffd',
+    backgroundColor: COLORS.slate50,
   },
   text: {
-    color: '#14532d',
-    fontWeight: '700',
+    color: COLORS.primary,
+    fontWeight: TYPOGRAPHY.weight.bold,
+    fontSize: TYPOGRAPHY.size.sm,
   },
 });

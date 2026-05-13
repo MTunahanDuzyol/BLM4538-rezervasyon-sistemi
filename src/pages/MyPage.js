@@ -48,6 +48,7 @@ export function MyPage({ navigation }) {
         <Tile title="Koltuk Rezervasyon Bilgisi" onPress={() => navigation.navigate('MyReservationsDetail')} />
         <Tile title="Kullanıcı İstatistikleri" onPress={() => navigation.navigate('StatsDetail')} />
         <Tile title="Profil" onPress={() => navigation.navigate('Profile')} />
+        <Tile title="Ceza ve İhlaller" onPress={() => navigation.navigate('Penalty')} />
         <Tile title="Oturum Kapat" onPress={handleLogout} danger />
       </View>
     </SafeAreaView>

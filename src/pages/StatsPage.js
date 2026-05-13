@@ -4,7 +4,18 @@ import { getMyStats } from '../features/stats/api';
 import { getAuthUser, isDemoUser, isLoggedIn } from '../services/authSession';
 import { HomeReturnButton } from '../components/HomeReturnButton';
 import { ScreenContainer } from '../components/ScreenContainer';
+import { COLORS, SPACING, TYPOGRAPHY, BORDER_RADIUS } from '../utils/theme';
+import { cardStyles, textStyles, stateStyles, alertStyles } from '../utils/components';
 
+/**
+ * StatsPage - Kullanıcı İstatistikleri Sayfası
+ * 
+ * Gösterir:
+ * - Toplam rezervasyon sayısı
+ * - Katılım oranı
+ * - Check-in / Check-out sayıları
+ * - Aktif rezervasyonlar
+ */
 export function StatsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -24,23 +35,29 @@ export function StatsPage() {
       setLoading(true);
       setError('');
 
-      if (isDemoUser()) {
-        const demoStats = getAuthUser()?.demoData?.stats ?? null;
-        if (active) {
-          setStats(demoStats);
-          setLoading(false);
-        }
-        return;
-      }
-
       try {
+        // Demo modu kontrol
+        if (isDemoUser()) {
+          const demoStats = getAuthUser()?.demoData?.stats ?? null;
+          if (active) {
+            setStats(demoStats);
+            setLoading(false);
+          }
+          return;
+        }
+
+        // Real API çağrısı
         const response = await getMyStats();
         if (!active) return;
+
         const statsData = response?.data ?? null;
         setStats(statsData);
       } catch (requestError) {
         if (!active) return;
-        setError(requestError?.response?.data?.message || 'İstatistikler yüklenemedi.');
+        const errorMsg = requestError?.response?.data?.message ||
+                        requestError?.message ||
+                        'İstatistikler yüklenemedi. Lütfen daha sonra tekrar deneyin.';
+        setError(errorMsg);
       } finally {
         if (active) setLoading(false);
       }
@@ -51,6 +68,9 @@ export function StatsPage() {
     };
   }, []);
 
+  /**
+   * Değeri aday listeden güvenli şekilde al
+   */
   function pickValue(...candidates) {
     for (const candidate of candidates) {
       if (candidate !== undefined && candidate !== null && candidate !== '') {
@@ -60,6 +80,9 @@ export function StatsPage() {
     return '-';
   }
 
+  /**
+   * Oran hesapla (numerator / denominator * 100)
+   */
   function formatRate(numerator, denominator) {
     const total = Number(denominator);
     const part = Number(numerator);
@@ -74,13 +97,14 @@ export function StatsPage() {
   if (!isLoggedIn()) {
     return (
       <SafeAreaView style={styles.safeArea}>
-        <View style={styles.blockedWrap}>
-          <Text style={styles.blockedText}>Lütfen önce oturum açın.</Text>
+        <View style={stateStyles.stateContainer}>
+          <Text style={textStyles.body}>Lütfen önce oturum açın.</Text>
         </View>
       </SafeAreaView>
     );
   }
 
+  // İstatistikleri normalize et
   const kullanim = stats?.kullanim || {};
   const ceza = stats?.ceza || {};
 
@@ -88,93 +112,175 @@ export function StatsPage() {
     kullanim?.rezervasyonToplam,
     kullanim?.toplamRezervasyon,
     kullanim?.totalReservations,
-    '-'
+    0
   );
+  
   const attendanceRate = pickValue(
     kullanim?.katilimOrani,
     kullanim?.attendanceRate,
     kullanim?.participationRate,
-    kullanim?.oran,
     formatRate(kullanim?.girisKaydiTamamlanan, kullanim?.rezervasyonToplam)
   );
+  
   const checkInCount = pickValue(
     kullanim?.girisKaydiToplam,
     kullanim?.checkInSayisi,
     kullanim?.checkInCount,
-    '-'
+    0
   );
+  
   const checkOutCount = pickValue(
     kullanim?.girisKaydiTamamlanan,
     kullanim?.checkOutSayisi,
     kullanim?.checkOutCount,
-    '-'
+    0
   );
+  
   const activeReservations = pickValue(
     kullanim?.girisKaydiAcik,
     ceza?.aktifRezervasyon,
     ceza?.activeReservations,
-    '-'
+    0
   );
 
   return (
-    <ScreenContainer title="Benim İstatistiklerim" subtitle="Hesabınıza ait kullanım özetini görün.">
-      <View style={styles.card}>
-        <Text style={styles.cardLabel}>Özet</Text>
-        {loading ? (
-          <ActivityIndicator color="#6B998B" />
-        ) : error ? (
-          <Text style={styles.errorText}>{error}</Text>
-        ) : (
-          <View style={styles.metricsGrid}>
-            <Metric label="Toplam Rezervasyon" value={reservationsTotal} />
-            <Metric label="Katılım Oranı" value={attendanceRate} />
-            <Metric label="Check-in Sayısı" value={checkInCount} />
-            <Metric label="Check-out Sayısı" value={checkOutCount} />
-            <Metric label="Aktif Rezervasyon" value={activeReservations} />
+    <ScreenContainer 
+      title="Benim İstatistiklerim" 
+      subtitle="Hesabınıza ait kullanım özetini görün."
+    >
+      {loading ? (
+        <View style={stateStyles.stateContainer}>
+          <ActivityIndicator size="large" color={COLORS.primary} />
+          <Text style={stateStyles.loadingText}>İstatistikler yükleniyor...</Text>
+        </View>
+      ) : error ? (
+        <>
+          <View style={alertStyles.alertError}>
+            <Text style={[alertStyles.alertText, alertStyles.alertErrorText]}>
+              {error}
+            </Text>
           </View>
-        )}
-      </View>
+          <View style={[cardStyles.card, { marginTop: SPACING.md }]}>
+            <Text style={textStyles.bodySmall}>
+              İstatistikler yüklenirken bir hata oluştu. Lütfen daha sonra tekrar deneyin.
+            </Text>
+          </View>
+        </>
+      ) : (
+        <>
+          <Text style={styles.sectionLabel}>Özet</Text>
+          <View style={styles.metricsGrid}>
+            <Metric 
+              label="Toplam Rezervasyon" 
+              value={String(reservationsTotal)} 
+              icon=""
+            />
+            <Metric 
+              label="Katılım Oranı" 
+              value={String(attendanceRate)} 
+              icon=""
+            />
+            <Metric 
+              label="Check-in Sayısı" 
+              value={String(checkInCount)} 
+              icon=""
+            />
+            <Metric 
+              label="Check-out Sayısı" 
+              value={String(checkOutCount)} 
+              icon=""
+            />
+            <Metric 
+              label="Aktif Rezervasyon" 
+              value={String(activeReservations)} 
+              icon=""
+              highlight={activeReservations > 0}
+            />
+          </View>
+
+          {activeReservations > 0 && (
+            <View style={[alertStyles.alertInfo, { marginTop: SPACING.lg }]}>
+              <Text style={[alertStyles.alertText]}>
+                Şu an {activeReservations} adet devam eden rezervasyonunuz bulunmaktadır.
+              </Text>
+            </View>
+          )}
+        </>
+      )}
+
       <HomeReturnButton />
     </ScreenContainer>
   );
 }
 
-function Metric({ label, value }) {
+/**
+ * Metric Kartı Bileşeni
+ */
+function Metric({ label, value, icon = '', highlight = false }) {
   return (
-    <View style={styles.metricBox}>
+    <View style={[
+      styles.metricBox,
+      highlight && styles.metricBoxHighlight
+    ]}>
+      <Text style={styles.metricIcon}>{icon}</Text>
       <Text style={styles.metricLabel}>{label}</Text>
-      <Text style={styles.metricValue}>{String(value)}</Text>
+      <Text style={[
+        styles.metricValue,
+        highlight && styles.metricValueHighlight
+      ]}>
+        {value}
+      </Text>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: '#fff' },
-  blockedWrap: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 20 },
-  blockedText: { fontSize: 16, color: '#334155' },
-  card: {
-    borderWidth: 1,
-    borderColor: '#d4dde3',
-    borderRadius: 12,
-    padding: 16,
-    backgroundColor: '#fff',
-    marginBottom: 12,
+  safeArea: { 
+    flex: 1, 
+    backgroundColor: COLORS.white 
   },
-  cardLabel: { color: '#64748b', fontWeight: '600', marginBottom: 12 },
-  errorText: { color: '#b91c1c' },
+  sectionLabel: {
+    fontSize: TYPOGRAPHY.size.lg,
+    fontWeight: TYPOGRAPHY.weight.semibold,
+    color: COLORS.text,
+    marginBottom: SPACING.lg,
+  },
   metricsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 10,
+    gap: SPACING.md,
+    marginBottom: SPACING.lg,
   },
   metricBox: {
     width: '48%',
     borderWidth: 1,
-    borderColor: '#e2e8f0',
-    borderRadius: 10,
-    padding: 12,
-    backgroundColor: '#f8fafc',
+    borderColor: COLORS.border,
+    borderRadius: BORDER_RADIUS.lg,
+    padding: SPACING.lg,
+    backgroundColor: COLORS.white,
+    alignItems: 'center',
   },
-  metricLabel: { color: '#64748b', fontSize: 12, marginBottom: 8 },
-  metricValue: { color: '#0f172a', fontSize: 18, fontWeight: '700' },
+  metricBoxHighlight: {
+    borderColor: COLORS.primary,
+    backgroundColor: COLORS.slate50,
+  },
+  metricIcon: {
+    fontSize: 24,
+    marginBottom: SPACING.sm,
+  },
+  metricLabel: {
+    color: COLORS.textSecondary,
+    fontSize: TYPOGRAPHY.size.xs,
+    fontWeight: TYPOGRAPHY.weight.semibold,
+    marginBottom: SPACING.md,
+    textAlign: 'center',
+  },
+  metricValue: {
+    color: COLORS.text,
+    fontSize: TYPOGRAPHY.size['2xl'],
+    fontWeight: TYPOGRAPHY.weight.bold,
+  },
+  metricValueHighlight: {
+    color: COLORS.primary,
+  },
 });
