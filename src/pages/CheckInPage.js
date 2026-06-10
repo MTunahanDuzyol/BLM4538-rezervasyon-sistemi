@@ -1,17 +1,17 @@
-import { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, SafeAreaView, StyleSheet, Text, TextInput, View, Platform, Linking } from 'react-native';
-import { BarCodeScanner } from 'expo-barcode-scanner';
+import { useState } from 'react';
+import { ActivityIndicator, Alert, Pressable, SafeAreaView, StyleSheet, Text, TextInput, View, Platform } from 'react-native';
+import { CameraView, useCameraPermissions } from 'expo-camera';
 import { confirmCheckIn } from '../features/qr/api';
 
 export function CheckInPage() {
-  const [manualMode, setManualMode] = useState(false);
+  const [manualMode, setManualMode] = useState(Platform.OS === 'web');
   const [reservationId, setReservationId] = useState('');
   const [loading, setLoading] = useState(false);
   const [resultText, setResultText] = useState('');
   const [success, setSuccess] = useState(null);
-  const [hasPermission, setHasPermission] = useState(null);
   const [scanned, setScanned] = useState(false);
   const [scanData, setScanData] = useState('');
+  const [permission, requestPermission] = useCameraPermissions();
 
   async function submit() {
     if (!reservationId.trim()) {
@@ -34,34 +34,10 @@ export function CheckInPage() {
     }
   }
 
-  useEffect(() => {
-    let mounted = true;
-    (async () => {
-      try {
-        const { status } = await BarCodeScanner.requestPermissionsAsync();
-        if (mounted) {
-          const ok = status === 'granted';
-          setHasPermission(ok);
-          // if no camera or running on web, enable manual mode automatically
-          if (!ok || Platform.OS === 'web') setManualMode(true);
-        }
-      } catch (e) {
-        if (mounted) {
-          setHasPermission(false);
-          setManualMode(true);
-        }
-      }
-    })();
-    return () => {
-      mounted = false;
-    };
-  }, []);
-
   async function handleBarCodeScanned({ data }) {
     if (scanned) return;
     setScanned(true);
     setScanData(String(data));
-    // try to extract numeric reservation id from scanned data
     const match = String(data).match(/(\d+)/);
     if (!match) {
       setResultText('QR kodu tanınamadı. Manuel giriş yapınız.');
@@ -83,20 +59,16 @@ export function CheckInPage() {
       setSuccess(false);
     } finally {
       setLoading(false);
-      // allow rescanning after short delay so user can see result
       setTimeout(() => setScanned(false), 1500);
     }
   }
 
   async function tryEnableCamera() {
-    try {
-      const { status } = await BarCodeScanner.requestPermissionsAsync();
-      const ok = status === 'granted';
-      setHasPermission(ok);
-      if (ok) setManualMode(false);
-      else Alert.alert('Kamera izni yok', 'Lütfen cihaz ayarlarından kamera izni verin.');
-    } catch (e) {
-      Alert.alert('Hata', 'Kamera izni alınamadı.');
+    const result = await requestPermission();
+    if (result.granted) {
+      setManualMode(false);
+    } else {
+      Alert.alert('Kamera izni yok', 'Lütfen cihaz ayarlarından kamera izni verin.');
     }
   }
 
@@ -106,9 +78,9 @@ export function CheckInPage() {
       <View style={styles.content}>
         {!manualMode ? (
           <View style={styles.scannerBox}>
-            {hasPermission === null ? (
+            {!permission ? (
               <Text style={styles.scannerText}>Kamera izni kontrol ediliyor...</Text>
-            ) : hasPermission === false ? (
+            ) : !permission.granted ? (
               <View>
                 <Text style={styles.scannerText}>Kamera izni yok. Ayarlardan izin verin veya manuel giriş yapın.</Text>
                 <Pressable style={[styles.primaryButton, { marginTop: 12 }]} onPress={() => setManualMode(true)}>
@@ -117,7 +89,11 @@ export function CheckInPage() {
               </View>
             ) : (
               <View style={{ flex: 1, width: '100%', borderRadius: 12, overflow: 'hidden' }}>
-                <BarCodeScanner onBarCodeScanned={scanned ? undefined : handleBarCodeScanned} style={{ flex: 1 }} />
+                <CameraView
+                  style={{ flex: 1 }}
+                  onBarcodeScanned={scanned ? undefined : handleBarCodeScanned}
+                  barcodeScannerSettings={{ barcodeTypes: ['qr'] }}
+                />
               </View>
             )}
           </View>
