@@ -1,4 +1,5 @@
-import { Pressable, StyleSheet, Text, View, useState } from 'react-native';
+import { useState } from 'react';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { HomeReturnButton } from '../components/HomeReturnButton';
 import { ScreenContainer } from '../components/ScreenContainer';
 import { getAuthUser } from '../services/authSession';
